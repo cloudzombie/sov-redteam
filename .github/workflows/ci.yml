@@ -47,10 +47,22 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Tests (arm64)
-        run: cargo test --release --target aarch64-apple-darwin
+        run: cargo test --workspace --release --target aarch64-apple-darwin
+
+      # The desktop app must build on the release target too — the GUI and the CLI
+      # ship together, so a GUI that does not compile is a broken release.
+      - name: Build the desktop app (arm64)
+        run: cargo build --release --target aarch64-apple-darwin -p sov-redteam-gui
+
+      # And the .app bundle itself must assemble + sign, icon generation included.
+      - name: Bundle "SOV Red Team.app"
+        run: |
+          cargo build --release --target aarch64-apple-darwin -p sov-redteam
+          packaging/macos/bundle-macos.sh v0.0.0-ci aarch64-apple-darwin dist
+          codesign --verify --deep --strict "dist/SOV Red Team.app"
 
       # The real deliverable: run the battery and let its EXIT CODE decide. It is
       # non-zero if any attack is VULNERABLE, so a broken defense fails CI here.

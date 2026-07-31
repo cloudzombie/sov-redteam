@@ -34,6 +34,15 @@ use sov_primitives::Hash;
 #[cfg(test)]
 use sov_types::MultisigApproval;
 
+/// Node link: connect to a real node, diagnose failures precisely, and
+/// auto-discover the endpoint that actually answers.
+pub mod link;
+pub use link::{
+    candidates as link_candidates, check_endpoint, check_endpoint_resilient,
+    discover as discover_node, normalize_endpoint, Attempt, LinkStatus, NodeLink, P2P_PORT,
+    RPC_PORT,
+};
+
 /// Live-fire front-door probe: attack a REAL running node over JSON-RPC.
 pub mod live;
 pub use live::{any_vulnerable as live_any_vulnerable, probe_frontdoor, LiveReport};

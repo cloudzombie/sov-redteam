@@ -25,12 +25,122 @@ fn main() {
     let funded = args.iter().any(|a| a == "--funded");
     let gauntlet = args.iter().any(|a| a == "--gauntlet");
 
+    let link_only = args.iter().any(|a| a == "--link" || a == "--check");
+
     match target {
-        Some(addr) if gauntlet => gauntlet_mode(&addr),
-        Some(addr) if funded => funded_mode(&addr),
-        Some(addr) if p2p => backdoor_mode(&addr),
-        Some(addr) => live_mode(&addr),
+        // `--link` is the diagnostic on its own: point it at anything and it says
+        // what is (or is not) there, and what to type instead.
+        Some(addr) if link_only => {
+            if !link_mode(&addr) {
+                std::process::exit(2);
+            }
+        }
+        Some(addr) if gauntlet => with_link(&addr, gauntlet_mode),
+        Some(addr) if funded => with_link(&addr, funded_mode),
+        Some(addr) if p2p => with_link(&addr, backdoor_mode),
+        Some(addr) => with_link(&addr, live_mode),
         None => in_process_mode(),
+    }
+}
+
+/// Preflight EVERY live mode through node discovery.
+///
+/// A live probe that opens with "node unreachable" and stops is useless: the cause
+/// is almost always the P2P port (`9645`) typed where JSON-RPC (`8645`) belongs, or
+/// an address a node UI advertised from a VPN interface that nothing can dial. So
+/// resolve the endpoint FIRST, adopt whichever candidate actually answers, print the
+/// evidence, and only then hand the working endpoint to the probe.
+fn with_link(addr: &str, probe: fn(&str)) {
+    let timeout = sov_redteam::link::DEFAULT_TIMEOUT;
+    // Wait out a stalled node rather than dead-ending on it: a SOV Station node
+    // that is mining (or serving the XUS Miner) can go silent for tens of seconds
+    // while a burst holds the chain lock, then answer normally again.
+    let link = sov_redteam::link::discover_patient(
+        addr,
+        timeout,
+        std::time::Duration::from_secs(45),
+        |link, remaining| {
+            println!(
+                "  \x1b[33m…\x1b[0m {} — node busy or silent; retrying for {}s",
+                link.status.label(),
+                remaining.as_secs()
+            );
+        },
+    );
+    if !link.status.is_live() {
+        report_link(&link);
+        std::process::exit(2);
+    }
+    if link.redirected {
+        println!(
+            "\n  \x1b[33m⟳\x1b[0m endpoint corrected: {} → \x1b[32m{}\x1b[0m",
+            sov_redteam::normalize_endpoint(addr),
+            link.endpoint
+        );
+    }
+    println!(
+        "  \x1b[32m●\x1b[0m LIVE {} · {} · height {} · {} ms",
+        link.endpoint,
+        link.chain_id.as_deref().unwrap_or("unknown chain"),
+        link.height.unwrap_or(0),
+        link.latency.map(|l| l.as_millis()).unwrap_or(0)
+    );
+    probe(&link.endpoint);
+}
+
+/// `--link`: diagnose a node endpoint and print the candidate sweep. Returns true
+/// if a node answered.
+fn link_mode(addr: &str) -> bool {
+    println!("\n  sov-redteam — node link check");
+    let link = sov_redteam::link::discover_patient(
+        addr,
+        sov_redteam::link::DEFAULT_TIMEOUT,
+        std::time::Duration::from_secs(20),
+        |l, r| println!("  … {} — retrying for {}s", l.status.label(), r.as_secs()),
+    );
+    report_link(&link);
+    link.status.is_live()
+}
+
+/// Print a link result: the verdict, the diagnosis, and every candidate tried.
+fn report_link(link: &sov_redteam::NodeLink) {
+    let live = link.status.is_live();
+    let (mark, color) = if live {
+        ("●", "\x1b[32m")
+    } else {
+        ("✗", "\x1b[31m")
+    };
+    println!(
+        "\n  {color}{mark} [{}]\x1b[0m {}",
+        link.status.label(),
+        link.detail
+    );
+    if !link.attempts.is_empty() {
+        println!("\n  candidates tried:");
+        for a in &link.attempts {
+            let c = if a.status.is_live() {
+                "\x1b[32m"
+            } else {
+                "\x1b[90m"
+            };
+            println!(
+                "   {c}{:<24} {:<15}\x1b[0m {}",
+                a.endpoint,
+                a.status.label(),
+                a.why
+            );
+        }
+    }
+    if !live {
+        println!(
+            "\n  JSON-RPC is port {} — port {} is P2P (Noise-XX) and never answers RPC.\n  \
+             If SOV Station shows a 10.x VPN address, use its LAN address or 127.0.0.1:{}.\n",
+            sov_redteam::RPC_PORT,
+            sov_redteam::P2P_PORT,
+            sov_redteam::RPC_PORT
+        );
+    } else {
+        println!();
     }
 }
 

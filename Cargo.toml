@@ -10,7 +10,12 @@ repository = "https://github.com/cloudzombie/sov-redteam"
 # monorepo's `chain/` workspace. The consensus crates it attacks are pulled from
 # the public SOV repository as git dependencies, so the harness always runs
 # against the SAME code a node runs — never a vendored copy that can drift.
+#
+# Two crates ship from here: this one is the ENGINE (library) plus the CLI, and
+# `gui/` is the desktop application. The GUI links the engine as a path
+# dependency, so both front ends run byte-for-byte the same attacks.
 [workspace]
+members = ["gui"]
 
 [[bin]]
 name = "sov-redteam"

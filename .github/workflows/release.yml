@@ -49,10 +49,10 @@ jobs:
 
       # GATE 1 — the crate's own tests, on arm64 hardware.
       - name: Tests (arm64)
-        run: cargo test --release --target "$TARGET"
+        run: cargo test --workspace --release --target "$TARGET"
 
-      - name: Build
-        run: cargo build --release --target "$TARGET" --bin sov-redteam
+      - name: Build (CLI + desktop app)
+        run: cargo build --release --target "$TARGET" -p sov-redteam -p sov-redteam-gui
 
       # GATE 2 — the battery itself. Non-zero exit on any VULNERABLE verdict, so
       # a release can never carry a harness that fails its own gauntlet.
@@ -67,11 +67,17 @@ jobs:
           set -euo pipefail
           tag="${{ steps.meta.outputs.tag }}"
           name="sov-redteam-${tag}-aarch64-apple-darwin"
+          # The macOS app bundle (icon generated from source, ad-hoc signed) with
+          # the CLI inside it, plus the CLI at the top level for terminal use.
+          packaging/macos/bundle-macos.sh "$tag" "$TARGET" dist
           mkdir -p "dist/$name"
+          mv "dist/SOV Red Team.app" "dist/$name/"
           cp "target/$TARGET/release/sov-redteam" "dist/$name/"
           cp README.md "dist/$name/"
           cp gauntlet.txt "dist/$name/gauntlet-report.txt"
           lipo -archs "dist/$name/sov-redteam" | grep -q arm64
+          lipo -archs "dist/$name/SOV Red Team.app/Contents/MacOS/sov-redteam-gui" | grep -q arm64
+          codesign --verify --deep --strict "dist/$name/SOV Red Team.app"
           tar -C dist -czf "dist/$name.tar.gz" "$name"
           shasum -a 256 "dist/$name.tar.gz" | tee "dist/$name.tar.gz.sha256"
           echo "name=$name" >> "$GITHUB_OUTPUT"
@@ -86,13 +92,15 @@ jobs:
           {
             echo "## sov-redteam $tag — macOS (Apple Silicon, aarch64)"
             echo
-            echo "Adversarial harness for the SOV chain. It builds a real in-process chain"
+            echo "Adversarial harness for the SOV chain — desktop app + CLI. It builds a real in-process chain"
             echo "(the actual \`produce_block\` / \`import_block\` consensus code) and attacks it."
             echo "Exit code is non-zero if any attack comes back VULNERABLE."
             echo
             echo '```'
             echo "shasum -a 256 -c $name.tar.gz.sha256"
-            echo "tar -xzf $name.tar.gz && ./$name/sov-redteam"
+            echo "tar -xzf $name.tar.gz"
+            echo "open \"$name/SOV Red Team.app\"   # desktop console"
+            echo "./$name/sov-redteam                 # CLI"
             echo '```'
             echo
             echo "### Gauntlet run on the release binary (arm64)"

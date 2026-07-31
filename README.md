@@ -25,15 +25,30 @@ Every tag publishes a signed-by-checksum `aarch64-apple-darwin` build, produced 
 arm64 runner that ran the tests *and* the full gauntlet before publishing.
 
 ```sh
-tag=v0.1.1
+tag=v0.2.0
 name=sov-redteam-$tag-aarch64-apple-darwin
 curl -LO https://github.com/cloudzombie/sov-redteam/releases/download/$tag/$name.tar.gz
 curl -LO https://github.com/cloudzombie/sov-redteam/releases/download/$tag/$name.tar.gz.sha256
 shasum -a 256 -c $name.tar.gz.sha256
-tar -xzf $name.tar.gz && ./$name/sov-redteam
+tar -xzf $name.tar.gz && open "$name/SOV Red Team.app"   # or: ./$name/sov-redteam
 ```
 
-Or build from source (needs `cmake` for RandomX): `cargo build --release`.
+Or build from source (needs `cmake` for RandomX): `cargo build --release`. The tarball
+contains `SOV Red Team.app` (GUI, ad-hoc signed, not notarized) with the `sov-redteam`
+CLI inside it at `Contents/MacOS/sov-redteam`.
+
+## The desktop app
+
+`SOV Red Team.app` is the same engine with a security-console front end: five probes
+(Gauntlet, Funded adversary, Front door, Back door, In-process), a live node-link pill
+that **pulses** while the link is up, and per-class headings that say what each class is
+actually testing. It runs `run_all()` — the exact attacks the CLI runs, not a second
+implementation.
+
+```sh
+open "SOV Red Team.app"          # or: sov-redteam-gui
+sov-redteam-gui --run            # start the in-process battery immediately (demos, screenshots)
+```
 
 ## Live-fire modes
 
@@ -44,6 +59,7 @@ sov-redteam --target <host[:port]>              # front door: JSON-RPC
 sov-redteam --target <host[:port]> --p2p        # back door: join P2P as a hostile peer
 sov-redteam --target <host[:port]> --funded     # funded adversary (key from SOV_REDTEAM_KEY)
 sov-redteam --target <host[:port]> --gauntlet   # try to drain the live steal-the-pot account
+sov-redteam --target <host[:port]> --link       # diagnose the connection and stop
 ```
 
 The front-door probe is side-effect-free — every transaction it sends is rejected at
@@ -63,6 +79,29 @@ The whole battery also runs headless in CI: `tests/gauntlet_live.rs` boots a rea
 in-process `sov-node` behind the JSON-RPC server, funds a pot-like account under a cold key
 the attacker never holds, and asserts across the full sweep that not a grain moved, the
 nonce and authorizer are unchanged, and **zero** forgeries were admitted to the mempool.
+## Connecting to a node (the part that used to just say "unreachable")
+
+Reaching a node fails for boring reasons far more often than interesting ones, so the
+harness diagnoses instead of giving up. Every live mode preflights through discovery:
+it normalizes the endpoint, probes it, and if it is silent sweeps a ranked candidate
+list — the same host on the RPC port, loopback, then this machine's real LAN addresses —
+adopts whichever answers, and prints what it tried.
+
+| Symptom | What is actually wrong | What the harness does |
+|---|---|---|
+| "node unreachable" on `:9645` | that is the **P2P** port (Noise-XX); JSON-RPC is **8645** | names the port mistake and switches to `:8645` |
+| the address SOV Station displays does not work | it can be a **VPN / point-to-point** interface address (`10.x` from Tailscale et al.) that nothing can dial — even locally | falls back to loopback and the real LAN address |
+| works locally, not from another box | the node is bound to loopback only | reports `REFUSED` per candidate, so the difference is visible |
+| intermittent failures while mining | a node serving the **XUS Miner** answers in 280–2550 ms under load, and can go silent for tens of seconds while a mining/import burst holds the chain lock | 5s RPC budget with retries and backoff, a 1.5s connect cap so dead addresses still fail fast, and it waits a stalled node out instead of dead-ending |
+
+In the app this is a status pill that pulses green when live (chain id, height, latency),
+shows **BUSY** in gold rather than flapping to red when a healthy node drops a call under
+load, and expands to the full candidate sweep when nothing answers.
+
+Proven end to end against a live mainnet node: pointed at `10.128.96.148:9645` (wrong
+port *and* an unreachable VPN address) while miner-shaped load ran, it corrected to
+`192.168.0.244:8645` and completed all 17 front-door attacks — every one DEFENDED,
+mempool `0 → 0`, no residue.
 
 ## What it attacks
 
