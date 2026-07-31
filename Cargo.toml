@@ -1,6 +1,6 @@
 [package]
 name = "sov-redteam"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Standalone adversarial red-team harness: throws theoretical attacks (timewarp, forgery, post-quantum, low-hashpower reorg, foreign-chain injection, supply) at the real SOV consensus code and reports which defenses held."
 license = "Apache-2.0"
@@ -23,6 +23,11 @@ path = "src/main.rs"
 sov-primitives = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 sov-crypto = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 sov-types = { git = "https://github.com/cloudzombie/sov", branch = "main" }
+# Constructing the full Action surface for the Gauntlet's exhaustive steal-the-pot
+# sweep: `IntentSettle` carries a `sov_intents::Settlement`, `TokenSetPolicy` a
+# `sov_compliance::CompliancePolicy`. These are the exact types the Action enum names.
+sov-intents = { git = "https://github.com/cloudzombie/sov", branch = "main" }
+sov-compliance = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 sov-state = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 sov-mining = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 sov-verify = { git = "https://github.com/cloudzombie/sov", branch = "main" }
@@ -38,6 +43,12 @@ sov-network = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 sov-wallet = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 hex = "0.4"
 serde_json = "1"
+
+[dev-dependencies]
+# The Gauntlet's live probe talks JSON-RPC to a real node. For CI (no mainnet), an
+# integration test boots an in-process `sov-node` behind `sov-rpc`'s server, funds a
+# pot-like account, and runs `probe_gauntlet` against it — real RPC, real rejection.
+sov-node = { git = "https://github.com/cloudzombie/sov", branch = "main" }
 
 [profile.release]
 opt-level = 3

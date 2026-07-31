@@ -1629,7 +1629,7 @@ dependencies = [
 [[package]]
 name = "sov-chain"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "sov-crypto",
  "sov-governance",
@@ -1646,7 +1646,7 @@ dependencies = [
 [[package]]
 name = "sov-compliance"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "serde",
@@ -1658,7 +1658,7 @@ dependencies = [
 [[package]]
 name = "sov-crypto"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "blake3",
  "borsh",
@@ -1674,7 +1674,7 @@ dependencies = [
 [[package]]
 name = "sov-governance"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "serde",
@@ -1685,7 +1685,7 @@ dependencies = [
 [[package]]
 name = "sov-intents"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "serde",
@@ -1697,7 +1697,7 @@ dependencies = [
 [[package]]
 name = "sov-mempool"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "sov-primitives",
  "sov-types",
@@ -1707,7 +1707,7 @@ dependencies = [
 [[package]]
 name = "sov-mining"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "primitive-types",
@@ -1719,7 +1719,7 @@ dependencies = [
 [[package]]
 name = "sov-network"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "blake3",
  "borsh",
@@ -1736,7 +1736,7 @@ dependencies = [
 [[package]]
 name = "sov-node"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "sov-chain",
@@ -1754,7 +1754,7 @@ dependencies = [
 [[package]]
 name = "sov-pow"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "randomx-rs",
@@ -1766,7 +1766,7 @@ dependencies = [
 [[package]]
 name = "sov-primitives"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "blake3",
  "borsh",
@@ -1777,14 +1777,17 @@ dependencies = [
 
 [[package]]
 name = "sov-redteam"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hex",
  "serde_json",
  "sov-chain",
+ "sov-compliance",
  "sov-crypto",
+ "sov-intents",
  "sov-mining",
  "sov-network",
+ "sov-node",
  "sov-primitives",
  "sov-rpc",
  "sov-state",
@@ -1796,7 +1799,7 @@ dependencies = [
 [[package]]
 name = "sov-rpc"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "argon2",
  "bip39",
@@ -1830,7 +1833,7 @@ dependencies = [
 [[package]]
 name = "sov-runtime"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "sha2 0.10.9",
@@ -1851,7 +1854,7 @@ dependencies = [
 [[package]]
 name = "sov-shielded"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "bech32",
  "blake3",
@@ -1870,7 +1873,7 @@ dependencies = [
 [[package]]
 name = "sov-shielded-pq"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "blake3",
  "borsh",
@@ -1889,7 +1892,7 @@ dependencies = [
 [[package]]
 name = "sov-state"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "serde",
@@ -1904,7 +1907,7 @@ dependencies = [
 [[package]]
 name = "sov-types"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "borsh",
  "serde",
@@ -1919,7 +1922,7 @@ dependencies = [
 [[package]]
 name = "sov-verify"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "sov-mining",
  "sov-primitives",
@@ -1930,7 +1933,7 @@ dependencies = [
 [[package]]
 name = "sov-vm"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "sov-primitives",
  "thiserror 2.0.19",
@@ -1940,7 +1943,7 @@ dependencies = [
 [[package]]
 name = "sov-wallet"
 version = "0.0.0"
-source = "git+https://github.com/cloudzombie/sov?branch=main#fcd82c40a397d054bc42851d769f95f9fb882671"
+source = "git+https://github.com/cloudzombie/sov?branch=main#4f2b02ea94c1d6d8f90b92e22974967f50dba204"
 dependencies = [
  "bip39",
  "getrandom",

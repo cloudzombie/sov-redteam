@@ -25,7 +25,7 @@ Every tag publishes a signed-by-checksum `aarch64-apple-darwin` build, produced 
 arm64 runner that ran the tests *and* the full gauntlet before publishing.
 
 ```sh
-tag=v0.1.0
+tag=v0.1.1
 name=sov-redteam-$tag-aarch64-apple-darwin
 curl -LO https://github.com/cloudzombie/sov-redteam/releases/download/$tag/$name.tar.gz
 curl -LO https://github.com/cloudzombie/sov-redteam/releases/download/$tag/$name.tar.gz.sha256
@@ -48,6 +48,21 @@ sov-redteam --target <host[:port]> --gauntlet   # try to drain the live steal-th
 
 The front-door probe is side-effect-free — every transaction it sends is rejected at
 admission, so nothing lands in the target's mempool.
+
+### the gauntlet is EXHAUSTIVE over the Action surface
+
+`--gauntlet` does not sample a few likely thefts; it attempts to move the pot through
+**every one of the 33 `Action` variants**, one attempt per variant, no duplicates and no
+gaps. Coverage is not a claim in this README — it is enforced by the crate's own tests:
+`action_kind` matches the `Action` enum with **no wildcard arm** (a newly added variant
+fails to compile), and `every_action_variant_has_a_steal_attempt` fails until that new
+variant has a real theft attempt registered. A widened attack surface therefore breaks the
+build rather than silently going untested.
+
+The whole battery also runs headless in CI: `tests/gauntlet_live.rs` boots a real
+in-process `sov-node` behind the JSON-RPC server, funds a pot-like account under a cold key
+the attacker never holds, and asserts across the full sweep that not a grain moved, the
+nonce and authorizer are unchanged, and **zero** forgeries were admitted to the mempool.
 
 ## What it attacks
 
