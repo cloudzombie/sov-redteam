@@ -1,6 +1,6 @@
 [package]
 name = "sov-redteam"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "Standalone adversarial red-team harness: throws theoretical attacks (timewarp, forgery, post-quantum, low-hashpower reorg, foreign-chain injection, supply) at the real SOV consensus code and reports which defenses held."
 license = "Apache-2.0"
