@@ -79,7 +79,10 @@ jobs:
           lipo -archs "dist/$name/SOV Red Team.app/Contents/MacOS/sov-redteam-gui" | grep -q arm64
           codesign --verify --deep --strict "dist/$name/SOV Red Team.app"
           tar -C dist -czf "dist/$name.tar.gz" "$name"
-          shasum -a 256 "dist/$name.tar.gz" | tee "dist/$name.tar.gz.sha256"
+          # Checksum recorded with the BARE filename (run from inside dist/), so a
+          # downloader can `shasum -a 256 -c` it in whatever directory they landed
+          # in. A `dist/` prefix here makes the published checksum unverifiable.
+          ( cd dist && shasum -a 256 "$name.tar.gz" | tee "$name.tar.gz.sha256" )
           echo "name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Publish the release
