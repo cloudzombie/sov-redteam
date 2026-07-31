@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # The harness attacks consensus pulled from `cloudzombie/sov@main`, so a green
+  # run yesterday says nothing about the chain today. Run it daily: this is the
+  # tripwire that turns a consensus regression into a red build instead of a
+  # surprise on release day.
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Apple Silicon is the FIRST-CLASS target: macos-15 runners are arm64, and the
+  # release artifact is aarch64-apple-darwin, so the gauntlet must be proven on
+  # the same architecture it ships for — not merely cross-compiled for it.
+  gauntlet-apple-silicon:
+    name: gauntlet (macOS arm64)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm the runner really is Apple Silicon
+        run: |
+          set -euo pipefail
+          arch="$(uname -m)"
+          echo "runner arch: $arch"
+          test "$arch" = "arm64"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+          components: rustfmt, clippy
+
+      # sov-mining builds RandomX through cmake.
+      - name: Build dependencies
+        run: brew list cmake >/dev/null 2>&1 || brew install cmake
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Tests (arm64)
+        run: cargo test --release --target aarch64-apple-darwin
+
+      # The real deliverable: run the battery and let its EXIT CODE decide. It is
+      # non-zero if any attack is VULNERABLE, so a broken defense fails CI here.
+      - name: Run the gauntlet (exit code is the verdict)
+        run: cargo run --release --target aarch64-apple-darwin --bin sov-redteam
+
+      - name: Confirm the binary is arm64
+        run: |
+          set -euo pipefail
+          bin=target/aarch64-apple-darwin/release/sov-redteam
+          lipo -archs "$bin"
+          lipo -archs "$bin" | grep -q arm64

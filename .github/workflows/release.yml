@@ -1,0 +1,108 @@
+name: Release (macOS Apple Silicon)
+
+# Cutting a tag cuts a macOS Apple-Silicon release. Nothing is published unless
+# the gauntlet passes ON the arm64 runner first: a red-team tool that shipped
+# without running its own battery would be worthless.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and publish (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  TARGET: aarch64-apple-darwin
+
+jobs:
+  macos-arm64:
+    name: build + gauntlet + publish (macOS arm64)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Resolve tag + confirm Apple Silicon
+        id: meta
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "runner arch: $(uname -m)"
+          test "$(uname -m)" = "arm64"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Build dependencies
+        run: brew list cmake >/dev/null 2>&1 || brew install cmake
+
+      - uses: Swatinem/rust-cache@v2
+
+      # GATE 1 — the crate's own tests, on arm64 hardware.
+      - name: Tests (arm64)
+        run: cargo test --release --target "$TARGET"
+
+      - name: Build
+        run: cargo build --release --target "$TARGET" --bin sov-redteam
+
+      # GATE 2 — the battery itself. Non-zero exit on any VULNERABLE verdict, so
+      # a release can never carry a harness that fails its own gauntlet.
+      - name: Run the gauntlet (exit code is the verdict)
+        run: |
+          set -euo pipefail
+          ./target/$TARGET/release/sov-redteam | tee gauntlet.txt
+
+      - name: Package
+        id: pkg
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          name="sov-redteam-${tag}-aarch64-apple-darwin"
+          mkdir -p "dist/$name"
+          cp "target/$TARGET/release/sov-redteam" "dist/$name/"
+          cp README.md "dist/$name/"
+          cp gauntlet.txt "dist/$name/gauntlet-report.txt"
+          lipo -archs "dist/$name/sov-redteam" | grep -q arm64
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+          shasum -a 256 "dist/$name.tar.gz" | tee "dist/$name.tar.gz.sha256"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          name="${{ steps.pkg.outputs.name }}"
+          {
+            echo "## sov-redteam $tag — macOS (Apple Silicon, aarch64)"
+            echo
+            echo "Adversarial harness for the SOV chain. It builds a real in-process chain"
+            echo "(the actual \`produce_block\` / \`import_block\` consensus code) and attacks it."
+            echo "Exit code is non-zero if any attack comes back VULNERABLE."
+            echo
+            echo '```'
+            echo "shasum -a 256 -c $name.tar.gz.sha256"
+            echo "tar -xzf $name.tar.gz && ./$name/sov-redteam"
+            echo '```'
+            echo
+            echo "### Gauntlet run on the release binary (arm64)"
+            echo '```'
+            sed -e 's/\x1b\[[0-9;]*m//g' gauntlet.txt
+            echo '```'
+          } > notes.md
+          gh release view "$tag" >/dev/null 2>&1 \
+            && gh release upload "$tag" "dist/$name.tar.gz" "dist/$name.tar.gz.sha256" --clobber \
+            || gh release create "$tag" \
+                 --title "sov-redteam $tag (macOS Apple Silicon)" \
+                 --notes-file notes.md \
+                 "dist/$name.tar.gz" "dist/$name.tar.gz.sha256"
